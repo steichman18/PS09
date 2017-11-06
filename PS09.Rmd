@@ -1,6 +1,6 @@
 ---
 title: "STAT/MATH 495: Problem Set 09"
-author: "WRITE YOUR NAME(S) HERE"
+author: "Sarah Teichman"
 date: "2017-11-07"
 output:
   html_document:
@@ -16,29 +16,38 @@ output:
 knitr::opts_chunk$set(
   echo = TRUE, fig.width=8, fig.height=4.5, message=FALSE, warning = FALSE
   )
-set.seed(76)
+set.seed(50)
 
 library(tidyverse)
+library(proxy)
 ```
-
-
 
 # Collaboration
 
 Please indicate who you collaborated with on this assignment: 
 
-
-
 # Question 1: Run k-means
 
+Loading in data
 ```{r}
 observations_1 <- read_csv("data/observations_1.csv")
 observations_2 <- read_csv("data/observations_2.csv")
+```
 
-# Set observations to be one of two datasets
-observations <- observations_2
+Exploratory Data Analysis
+```{r}
+ggplot(observations_1, aes(x=x1,y=x2)) +
+  geom_point() +
+  labs(title="Distribution from observations_1")
+ggplot(observations_2, aes(x=x1,y=x2)) +
+  geom_point() + 
+  labs(title="Distribution from observations_2")
+```
 
+Creating function to run K-means clustering (with observations as the argument)
+```{r}
 # Fit model for k=2
+kmc <- function(observations) {
 k <- 2
 k_means_results <- kmeans(observations, centers=k)
 clusters <- k_means_results$cluster
@@ -56,27 +65,60 @@ cluster_centers <- cluster_centers %>%
 ggplot(NULL, aes(x=x1, y=x2, col=cluster)) +
   geom_point(data=observations) +
   geom_point(data=cluster_centers, size=5)
+
+return(cluster_centers)
+}
+```
+
+Running the function for observations 1 and observations 2
+```{r}
+cluster_centers_1 <- data.frame(numeric(20),numeric(20),numeric(20))
+cluster_centers_2 <- data.frame(numeric(20),numeric(20),numeric(20))
+names(cluster_centers_1) <- c('x1','x2','cluster')
+names(cluster_centers_2) <- c('x1','x2','cluster')
+for (i in 1:10) {
+  x <- kmc(observations_1) 
+  cluster_centers_1$x1[i] <- x$x1[1]
+  cluster_centers_1$x2[i] <- x$x2[1]
+  cluster_centers_1$cluster[i] <- 1
+  cluster_centers_1$x1[10+i] <- x$x1[2]
+  cluster_centers_1$x2[10+i] <- x$x2[2]
+  cluster_centers_1$cluster[10+i] <- 2
+}
+cluster_centers_1 %>%
+  group_by(x1,x2) %>%
+  summarize(count=n())
+for (i in 1:10) {
+  x <- kmc(observations_2) 
+  cluster_centers_2$x1[i] <- x$x1[1]
+  cluster_centers_2$x2[i] <- x$x2[1]
+  cluster_centers_2$cluster[i] <- 1
+  cluster_centers_2$x1[10+i] <- x$x1[2]
+  cluster_centers_2$x2[10+i] <- x$x2[2]
+  cluster_centers_2$cluster[10+i] <- 2
+}
+cluster_centers_2 %>%
+  group_by(x1,x2) %>%
+  summarize(count=n())
 ```
 
 **Questions**:
 
 1. Run KMC 10 times on `observations_1` and comment on the consistency of the
 results.
-1. Speculate on the root cause of any consistency or inconsistency in the
+2. Speculate on the root cause of any consistency or inconsistency in the
 results.
-1. Run KMC 10 times on `observations_2` and comment on the consistentcy of the
+3. Run KMC 10 times on `observations_2` and comment on the consistentcy of the
 results.
-1. Speculate on the root cause of any consistency or inconsistency in the
+4. Speculate on the root cause of any consistency or inconsistency in the
 results.
 
 **Answers**:
 
-1.
-1.
-1.
-1.
-
-
+1. The results are not very consistent (over the 10 trials, there are about 4-6 different points that are identified as cluster centers).
+2. The results aren't consistent because the points are spread out throughout the two attributes, and don't appear to be in any meaningful clusters.
+3. The results are very consistent (over the 10 trials, the same two cluster centers are identified every time).
+4. The results are consistent because the points appear to be split in two clear groups, one that has smaller values of both x1 and x2, and one that has larger values for both of these attributes. 
 
 # Bonus question: Code your own
 
@@ -85,17 +127,31 @@ Don't worry about doing it for general $k$; keep it simple and do it for $k=2$
 specifically. Apply it to `observations_2` from above.
 
 ```{r}
-# Hint:
-library(proxy)
-A <- data_frame(
-  x1 = c(0, 0.5, 0.75, 1),
-  x2 = c(0, 0.5, 0.75, 1)
-)
-B <- data_frame(
-  x1 = c(1, 0),
-  x2 = c(1, 0)
-)
-distance_matrix <- proxy::dist(x=A, y=B)
-distance_matrix
-apply(distance_matrix, 1, which.min)
+get_cluster <- function(A,B) {
+  distance_matrix <- proxy::dist(x=A, y=B)
+  clusters <- apply(distance_matrix, 1, which.min)
+  return(clusters)
+}
 ```
+
+```{r}
+num <- data.frame(seq(1,100))
+x <- sample_n(num,50)
+#setting intial random clusters
+observations <- observations_2 %>%
+  mutate(id = seq(1:100),
+         cluster = ifelse(id %in% x$seq.1..100., 1,2))
+#finding cluster centers
+info <- observations %>%
+  group_by(cluster) %>%
+  summarise(x1 = mean(x1),x2 = mean(x2))
+obs_dist <- observations %>%
+  select(x1,x2)
+cent_dist <- info %>%
+  select(x1,x2)
+clusters <- get_cluster(obs_dist,cent_dist)
+observations$cluster <- clusters
+head(observations)
+tail(observations)
+```
+
