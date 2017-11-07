@@ -371,6 +371,14 @@ cluster_centers_2 %&gt;%
   clusters &lt;- apply(distance_matrix, 1, which.min)
   return(clusters)
 }</code></pre>
+<pre class="r"><code>all_equal &lt;- function(A,B,n) {
+  for (i in 1:n) {
+    if (A[i] != B[i]) {
+      return(FALSE)
+    }
+  }
+  return(TRUE)
+}</code></pre>
 <pre class="r"><code>num &lt;- data.frame(seq(1,100))
 x &lt;- sample_n(num,50)
 #setting intial random clusters
@@ -378,60 +386,57 @@ observations &lt;- observations_2 %&gt;%
   mutate(id = seq(1:100),
          cluster = ifelse(id %in% x$seq.1..100., 1,2))
 #finding cluster centers
-info &lt;- observations %&gt;%
-  group_by(cluster) %&gt;%
-  summarise(x1 = mean(x1),x2 = mean(x2))
-obs_dist &lt;- observations %&gt;%
-  select(x1,x2)
-cent_dist &lt;- info %&gt;%
-  select(x1,x2)
-clusters &lt;- get_cluster(obs_dist,cent_dist)
-observations$cluster &lt;- clusters
+observations &lt;- observations %&gt;%
+  mutate(cluster_old = numeric(nrow(observations)),
+         cluster_new = cluster)
+counter = 0
+while(all_equal(observations$cluster_old,observations$cluster_new,nrow(observations))==FALSE) {
+  counter = counter + 1
+  info &lt;- observations %&gt;%
+    group_by(cluster_new) %&gt;%
+    summarise(x1 = mean(x1),x2 = mean(x2))
+  obs_dist &lt;- observations %&gt;%
+    select(x1,x2)
+  cent_dist &lt;- info %&gt;%
+    select(x1,x2)
+  observations$cluster_old = observations$cluster_new
+  clusters &lt;- get_cluster(obs_dist,cent_dist)
+  observations$cluster_new &lt;- clusters 
+}
+observations &lt;- observations %&gt;%
+  mutate(cluster = cluster_new) %&gt;%
+  select(id,cluster)
 head(observations)</code></pre>
 <div class="kable-table">
 <table>
 <thead>
 <tr class="header">
-<th align="right">x1</th>
-<th align="right">x2</th>
 <th align="right">id</th>
 <th align="right">cluster</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td align="right">0.2783651</td>
-<td align="right">0.3719691</td>
 <td align="right">1</td>
 <td align="right">2</td>
 </tr>
 <tr class="even">
-<td align="right">0.1048981</td>
-<td align="right">0.8952985</td>
 <td align="right">2</td>
 <td align="right">2</td>
 </tr>
 <tr class="odd">
-<td align="right">0.1581027</td>
-<td align="right">0.1219323</td>
 <td align="right">3</td>
 <td align="right">2</td>
 </tr>
 <tr class="even">
-<td align="right">0.9597248</td>
-<td align="right">0.5717772</td>
 <td align="right">4</td>
 <td align="right">2</td>
 </tr>
 <tr class="odd">
-<td align="right">0.6116220</td>
-<td align="right">0.6543728</td>
 <td align="right">5</td>
 <td align="right">2</td>
 </tr>
 <tr class="even">
-<td align="right">0.6901728</td>
-<td align="right">0.1707154</td>
 <td align="right">6</td>
 <td align="right">2</td>
 </tr>
@@ -443,52 +448,40 @@ head(observations)</code></pre>
 <table>
 <thead>
 <tr class="header">
-<th align="right">x1</th>
-<th align="right">x2</th>
 <th align="right">id</th>
 <th align="right">cluster</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td align="right">1.370252</td>
-<td align="right">1.192952</td>
 <td align="right">95</td>
 <td align="right">1</td>
 </tr>
 <tr class="even">
-<td align="right">1.641580</td>
-<td align="right">1.351952</td>
 <td align="right">96</td>
 <td align="right">1</td>
 </tr>
 <tr class="odd">
-<td align="right">1.814537</td>
-<td align="right">1.114331</td>
 <td align="right">97</td>
 <td align="right">1</td>
 </tr>
 <tr class="even">
-<td align="right">1.298152</td>
-<td align="right">1.718082</td>
 <td align="right">98</td>
 <td align="right">1</td>
 </tr>
 <tr class="odd">
-<td align="right">1.269840</td>
-<td align="right">1.279240</td>
 <td align="right">99</td>
 <td align="right">1</td>
 </tr>
 <tr class="even">
-<td align="right">1.404968</td>
-<td align="right">1.852397</td>
 <td align="right">100</td>
 <td align="right">1</td>
 </tr>
 </tbody>
 </table>
 </div>
+<pre class="r"><code>counter</code></pre>
+<pre><code>## [1] 2</code></pre>
 </div>
 
 
