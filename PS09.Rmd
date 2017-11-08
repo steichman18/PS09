@@ -116,9 +116,9 @@ results.
 **Answers**:
 
 1. The results are not very consistent (over the 10 trials, there are about 4-6 different points that are identified as cluster centers).
-2. The results aren't consistent because the points are spread out throughout the two attributes, and don't appear to be in any meaningful clusters.
+2. The results aren't consistent because the points are spread out throughout the two attributes, and don't appear to be in any meaningful clusters. Since there aren't two obvious groups, the points are classified into two different groups each time. This is shown by the fact that there are ten distinct cluster centers chosen during the ten trials (twenty cluster centers are caculated). 
 3. The results are very consistent (over the 10 trials, the same two cluster centers are identified every time).
-4. The results are consistent because the points appear to be split in two clear groups, one that has smaller values of both x1 and x2, and one that has larger values for both of these attributes. 
+4. The results are consistent because the points appear to be split in two clear groups, one that has smaller values of both x1 and x2, and one that has larger values for both of these attributes. Over the ten trials, the same two cluster centers are continuously chosen, because the points are assigned to the same clusters each time.  
 
 # Bonus question: Code your own
 
@@ -170,6 +170,10 @@ while(all_equal(observations$cluster_old,observations$cluster_new,nrow(observati
   clusters <- get_cluster(obs_dist,cent_dist)
   observations$cluster_new <- clusters 
 }
+ggplot(observations,aes(x=x1,y=x2,color=as.factor(cluster_new)))+
+  geom_point() +
+  labs(title="Result of KMN",
+       color="Cluster")
 observations <- observations %>%
   mutate(cluster = cluster_new) %>%
   select(id,cluster)
